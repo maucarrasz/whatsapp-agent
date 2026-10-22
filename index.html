@@ -77,6 +77,7 @@ td{padding:8px;border-bottom:1px solid #eee}
       <label>Direccion</label><input id="f-direccion" placeholder="Av. Ejemplo 123, Miraflores">
       <label>Preguntas frecuentes (una por linea, Pregunta: respuesta)</label><textarea id="f-faq" placeholder="Aceptan tarjeta: Si, todas las tarjetas y Yape"></textarea>
       <label>Politicas</label><textarea id="f-politicas" placeholder="Cancelaciones con 4h de anticipacion"></textarea>
+      <label>Zona horaria (para las citas)</label><input id="f-zona" placeholder="America/Lima">
       <label>Reglas para agendar</label><textarea id="f-reglas" placeholder="No agendar domingos; duracion de cita 45 min"></textarea>
       <button class="btn" id="btnGuardar">Guardar</button>
       <button class="btn gris" id="btnReiniciar">Reiniciar chat</button>
@@ -104,7 +105,7 @@ function renderLista(){
 window.sel=id=>{activo=id;renderLista();cargarConfig();renderChat();renderCitas();}
 function cargarConfig(){
   const c=cliente();if(!c)return;
-  ['nombre','servicios','horarios','direccion','faq','politicas','reglas'].forEach(k=>$('f-'+k).value=c.config[k]||'');
+  ['nombre','servicios','horarios','direccion','faq','politicas','zona','reglas'].forEach(k=>$('f-'+k).value=c.config[k]||'');
 }
 function renderChat(){
   const c=cliente();const m=$('mensajes');m.innerHTML='';
@@ -123,7 +124,7 @@ async function enviar(){
   c.historial=c.historial||[];c.historial.push({rol:'cliente',texto:txt});renderChat();
   const thinking=document.createElement('div');thinking.className='msg agente';thinking.textContent='...';$('mensajes').appendChild(thinking);
   try{
-    const r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({config:c.config,historial:c.historial.slice(0,-1),mensaje:txt,estado:c.estado||null})});
+    const r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({config:c.config,historial:c.historial.slice(0,-1),mensaje:txt,estado:c.estado||null,citas:c.citas||[]})});
     const data=await r.json();
     thinking.remove();
     c.historial.push({rol:'agente',texto:data.texto||'(sin respuesta)'});
@@ -137,7 +138,7 @@ async function enviar(){
 let enviando=false;
 $('btnEnviar').onclick=enviar;
 $('chatInput').addEventListener('keydown',e=>{if(e.key==='Enter')enviar()});
-$('btnGuardar').onclick=()=>{const c=cliente();if(!c)return;['nombre','servicios','horarios','direccion','faq','politicas','reglas'].forEach(k=>c.config[k]=$('f-'+k).value);guardar();renderLista();alert('Guardado. El agente ya responde con estos datos.')};
+$('btnGuardar').onclick=()=>{const c=cliente();if(!c)return;['nombre','servicios','horarios','direccion','faq','politicas','zona','reglas'].forEach(k=>c.config[k]=$('f-'+k).value);guardar();renderLista();alert('Guardado. El agente ya responde con estos datos.')};
 $('btnReiniciar').onclick=()=>{const c=cliente();if(!c)return;c.historial=[];c.estado=null;guardar();renderChat()};
 $('btnNuevo').onclick=()=>{
   const nombre=prompt('Nombre del negocio del cliente:');
