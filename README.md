@@ -27,27 +27,37 @@ OpenRouter, memoria, datos del negocio, agendamiento, pruebas, deploy).
 - `api/agent-core.js` — prompt, motor demo y llamada a OpenRouter
 - `api/webhook/whatsapp.js` — verificacion y recepcion de Meta Cloud API
 
+## Seguridad del webhook (implementada, probada con fixtures)
+`node test/webhook.test.js` corre 13 pruebas con payloads simulados de Meta
+(sin servicios reales; esto NO reemplaza la prueba real autorizada):
+- Verificacion X-Hub-Signature-256 (HMAC-SHA256 del cuerpo crudo con
+  WHATSAPP_APP_SECRET, comparacion timing-safe). Sin firma valida: 401.
+- Validacion de la forma del payload y limites (entradas, mensajes, largo).
+- Separacion por negocio: el phone_number_id de metadata elige la config;
+  numeros no registrados se ignoran (no responde como negocio equivocado).
+- Aislamiento: memoria por (negocio, cliente); citas compartidas por negocio
+  para prevencion de doble reserva entre clientes distintos.
+
 ## Checklist para conectar WhatsApp real (pendiente de go)
 1. Crear app en developers.facebook.com (tipo Empresa) y activar WhatsApp (accion del dueno de la cuenta Meta).
 2. Env vars en Vercel (no se configuran sin autorizacion):
    - WHATSAPP_VERIFY_TOKEN (cualquier cadena que elijas)
+   - WHATSAPP_APP_SECRET (App Secret de la app de Meta; firma de webhooks)
    - WHATSAPP_TOKEN (token permanente de Meta)
-   - WHATSAPP_PHONE_NUMBER_ID (del panel de Meta)
+   - WHATSAPP_CONFIG_JSON (mapa {"<phone_number_id>": {nombre, servicios, horarios, zona, ...}})
    - OPENROUTER_API_KEY (openrouter.ai, cuenta gratis)
    - OPENROUTER_MODEL (opcional; por defecto openrouter/auto)
-3. En Meta: configurar webhook = https://TU-DEPLOY/api/webhook/whatsapp, suscribir `messages`.
+3. En Meta: configurar webhook = https://wppagent-avanzaflow.vercel.app/api/webhook/whatsapp, suscribir `messages`.
 4. Probar con el numero de prueba de Meta hasta romperlo (paso 7 de la guia).
 5. Produccion (NO listo, no usar con clientes reales todavia):
    - Persistencia real: hoy las citas y la memoria viven en el navegador
      (demo) o en memoria de proceso (webhook); falta base de datos por cliente.
-   - Aislamiento multi-cliente: falta asociar cada numero de WhatsApp
-     (phone_number_id) a su negocio y separar conversaciones y citas.
    - Auth del panel web: hoy es abierto; falta login para que cada cliente
      vea solo su negocio.
-   - Verificacion de firma del webhook de Meta (X-Hub-Signature-256).
    - Prueba real autorizada con numero de prueba antes de cualquier cliente.
 6. Opcional (guia): Cal.com para agenda real; NO integrado todavia - hoy el
    agendamiento es interno con fecha/hora absolutas y control de cupos.
 
 ## Deploy
 `vercel --prod` (cero dependencias; estatica + funciones serverless).
+Produccion: https://wppagent-avanzaflow.vercel.app/
