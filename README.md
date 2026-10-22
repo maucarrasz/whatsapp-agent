@@ -10,6 +10,10 @@ OpenRouter, memoria, datos del negocio, agendamiento, pruebas, deploy).
 - Abre la web, crea un cliente, carga los datos de su negocio y prueba el chat.
 - El agente responde con un motor de reglas local (saludos, precios, horarios,
   direccion, FAQ y agendamiento paso a paso con confirmacion).
+- Las fechas y horas se resuelven a valores absolutos en la zona horaria del
+  negocio ("manana" -> "viernes, 23 de octubre", 17:00) antes de confirmar.
+- Valida disponibilidad: no agenda fuera de horario, respeta reglas como
+  "no agendar domingos" y evita doble reserva en el mismo dia y hora.
 - Datos en el navegador (localStorage). Nada toca WhatsApp real.
 
 **MODO REAL (requiere env vars + app de Meta, ver checklist)**
@@ -33,9 +37,17 @@ OpenRouter, memoria, datos del negocio, agendamiento, pruebas, deploy).
    - OPENROUTER_MODEL (opcional; por defecto openrouter/auto)
 3. En Meta: configurar webhook = https://TU-DEPLOY/api/webhook/whatsapp, suscribir `messages`.
 4. Probar con el numero de prueba de Meta hasta romperlo (paso 7 de la guia).
-5. Produccion: mover la memoria de proceso a Supabase/Upstash y los datos de
-   negocio por numero (CONFIG_POR_NUMERO) a una tabla por cliente.
-6. Opcional (guia): Cal.com para agenda real; hoy el agendamiento es interno.
+5. Produccion (NO listo, no usar con clientes reales todavia):
+   - Persistencia real: hoy las citas y la memoria viven en el navegador
+     (demo) o en memoria de proceso (webhook); falta base de datos por cliente.
+   - Aislamiento multi-cliente: falta asociar cada numero de WhatsApp
+     (phone_number_id) a su negocio y separar conversaciones y citas.
+   - Auth del panel web: hoy es abierto; falta login para que cada cliente
+     vea solo su negocio.
+   - Verificacion de firma del webhook de Meta (X-Hub-Signature-256).
+   - Prueba real autorizada con numero de prueba antes de cualquier cliente.
+6. Opcional (guia): Cal.com para agenda real; NO integrado todavia - hoy el
+   agendamiento es interno con fecha/hora absolutas y control de cupos.
 
 ## Deploy
 `vercel --prod` (cero dependencias; estatica + funciones serverless).
